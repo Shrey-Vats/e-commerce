@@ -1,6 +1,6 @@
 import e from "express";
 import cooki from "cookie-parser"
-import authRouter from "./Routes/authRoute.js";
+import authRouter from "./Routes/authRoute.ts";
 
 const app = e();
 const PORT = process.env.PORT || 3000

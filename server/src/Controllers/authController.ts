@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { prisma } from "../Configs/db.js";
+import { prisma } from "../Configs/db.ts";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -49,7 +49,8 @@ export const Register = async (req: Request, res: Response) => {
     } catch (error) {
         return res.status(500).json({
             message: "Something went wrong",
-            success: false
+            success: false,
+            error
         })
     }
 }
@@ -103,9 +104,16 @@ export const Login = async (req: Request, res: Response) => {
 }
 
 export const Logout = async( req: Request, res: Response) => {
-    res.clearCookie("token");
-    res.status(200).json({
-        message: "User logged out successfully",
-        success: true
-    })
+    try {
+        res.clearCookie("token");
+        res.status(200).json({
+            message: "User logged out successfully",
+            success: true
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Something went wrong",
+            success: false
+        }) 
+    }
 }
