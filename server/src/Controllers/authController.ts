@@ -2,8 +2,10 @@ import type { Request, Response } from "express";
 import { prisma } from "../Configs/db.ts";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendEmail } from "../Configs/mailer.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const URL = process.env.URL || "http://localhost:5173";
 export const Register = async (req: Request, res: Response) => {
     const { username ,email, password } = req.body;
 
@@ -40,8 +42,28 @@ export const Register = async (req: Request, res: Response) => {
             }
         });
 
+        const token = jwt.sign({
+            id: user.id,
+            username: user.username,
+        }, JWT_SECRET);
+
+        const currentTime = Date.now();
+        const tokenExpiry = new Date(currentTime + 60 * 60 * 1000)
+
+        await prisma.user.update({
+            where: {id: user.id},
+            data: {
+                emailVerifyToken: token,
+                emailVerifyTokenExpiry: tokenExpiry.toISOString()
+            }
+        });
+
+        const link = `${URL}/verify-email?token=${token}`
+
+        sendEmail(email, link)
+
         return res.status(201).json({
-            message: "User created successfully",
+            message: "Verification link sent to your email",
             success: true,
             user
         })
@@ -69,6 +91,30 @@ export const Login = async (req: Request, res: Response) => {
                 success: false
             });
         };
+
+         const token = jwt.sign({
+            id: user.id,
+            username: user.username,
+        }, JWT_SECRET);
+
+        const currentTime = Date.now();
+        const tokenExpiry = new Date(currentTime + 60 * 60 * 1000)
+
+        await prisma.user.update({
+            where: {id: user.id},
+            data: {
+                emailVerifyToken: token,
+                emailVerifyTokenExpiry: tokenExpiry.toISOString()
+            }
+        });
+
+        if(!user.IsVerified){
+            sendEmail(user.email, `${URL}/verify-email?token=${user.emailVerifyToken}`);
+            return res.status(200).json({
+                message: "Verification link sent to your email",
+                success: true
+            })
+        }
 
         const isPasswordCorrect = bcrypt.compareSync(password, user.password);
 
@@ -115,5 +161,48 @@ export const Logout = async( req: Request, res: Response) => {
             message: "Something went wrong",
             success: false
         }) 
+    }
+}
+
+export const VerifyEmail = async (req: Request, res: Response) => {
+    const { token } = req.query;
+
+    try {
+        if (!token || typeof token !== "string") {
+            return res.status(400).json({
+                message: "Token not found",
+                success: false
+            })
+        }
+
+        const user = await prisma.user.findFirst({
+            where: {
+                emailVerifyToken: token,
+                emailVerifyTokenExpiry: {
+                    gt: new Date().toISOString()
+                }
+            }
+        });
+
+        if(!user){
+            return res.status(400).json({
+                message: "Invalid token or token has expired",
+                success: false
+            })
+        }
+
+        await prisma.user.update({
+            where: {id: user.id},
+            data: {
+                emailVerifyToken: null,
+                emailVerifyTokenExpiry: null,
+                IsVerified: true
+            }
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Something went wrong",
+            success: false
+        })
     }
 }
