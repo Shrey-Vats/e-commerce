@@ -1,21 +1,14 @@
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import z from "zod"
-import { LoginSchema } from "@/lib/Schema"
-import { zodResolver } from "@hookform/resolvers/zod"
-
-type FormData = z.infer< typeof LoginSchema>
+import { useForm } from "react-hook-form";
+import z from "zod";
+import { LoginSchema } from "@/lib/Schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import Checkbox from "@mui/material/Checkbox";
+import Google from "../assets/google-logo.png";
+import Github from "../assets/github.png";
+const BaseUrl = "http://localhost:3000";
+type FormData = z.infer<typeof LoginSchema>;
 export function LoginForm({
   className,
   ...props
@@ -28,69 +21,115 @@ export function LoginForm({
     formState: { errors, isValid },
   } = useForm<FormData>({
     resolver: zodResolver(LoginSchema),
-    mode: "onChange"
-  })
+    mode: "onChange",
+  });
 
+  const navigation = useNavigate();
   const emailValue = watch("email");
-  
-  const onSubmit = (data: FormData) => {
+
+  const onSubmit = async (data: FormData) => {
     console.log(data);
-  }
+
+    const result = await axios.post(`${BaseUrl}/auth/login`, data);
+
+    if (!result.data.success) {
+      return setError("email", { message: result.data.message });
+    }
+
+    if (result.data.message === "Verification link sent to your email") {
+      return navigation(`/emailverification-status?id=${result.data.id}`);
+    }
+
+    navigation("/");
+  };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-3">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  {...register("email")}
-                  required
-                />
-                {errors.email && <p className="text-red-500">{errors.email.message}</p>}
-              </div>
-              <div className="grid gap-3">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
-                <Input id="password" {...register("password")} type="password" required />
-                {errors.password && <p className="text-red-500">{errors.password.message}</p>}
-              </div>
-              <div className="flex flex-col gap-3">
-                <Button type="submit" disabled={!isValid} className="w-full disabled:opacity-[50%] disabled:cursor-not-allowed">
-                  Login
-                </Button>
-                <Button disabled={!isValid} variant="outline" className="w-full">
-                  Login with Google
-                </Button>
-              </div>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <a href="#" className="underline underline-offset-4">
-                Sign up
-              </a>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    <form onSubmit={handleSubmit(onSubmit)} className="w-full h-auto  flex flex-col justify-center gap-3 items-center">
+      <h1 className="text-3xl font-medium mb-5">Sign in to ShopSee</h1>
+      <input
+        type="text"
+        {...register("email")}
+        className="w-3/6 px-4 py-2 rounded-4xl outline-none border-2 bg-gray-100"
+        placeholder="Email"
+      />
+      {errors.email && (
+        <p className="mt-2 text-sm text-red-500 flex items-center gap-2 animate-fade-in">
+          <svg
+            className="w-4 h-4 text-red-500"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.662 1.732-3L13.732 4c-.77-1.338-2.694-1.338-3.464 0L4.34 16c-.77 1.338.192 3 1.732 3z"
+            />
+          </svg>
+          <span className="font-medium">{errors.email.message}</span>
+        </p>
+      )}
+
+      <input
+        type="password"
+        {...register("password")}
+        className="w-3/6 px-4 py-2 rounded-4xl outline-none border-2 bg-gray-100"
+        placeholder="Password"
+      />
+      {errors.password && (
+        <p className="mt-2 text-sm text-red-500 flex items-center gap-2 animate-fade-in">
+          <svg
+            className="w-4 h-4 text-red-500"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.662 1.732-3L13.732 4c-.77-1.338-2.694-1.338-3.464 0L4.34 16c-.77 1.338.192 3 1.732 3z"
+            />
+          </svg>
+          <span className="font-medium">{errors.password.message}</span>
+        </p>
+      )}
+
+      <div className="w-3/6 flex justify-between items-center ">
+        <div className="flex items-center justify-center">
+          <Checkbox className="" />
+          <span>Remember me</span>
+        </div>
+        <span className="text-gray-600 underline font-medium cursor-pointer">
+          Forget Password?
+        </span>
+      </div>
+      <button className="w-3/6 py-2 cursor-pointer hover:bg-[#eb5402] bg-[#f25805] text-white rounded-4xl">
+        Sign in
+      </button>
+      <div className="flex items-center py-5 w-3/6" id="divider">
+        <div className="flex-grow h-[1px] bg-gray-400"></div>
+        <span
+          className="flex-shrink mx-4 text-gray-500 text-sm"
+          id="divider-text"
+        >
+          Or login with
+        </span>
+        <div className="flex-grow h-[1px] bg-gray-400"></div>
+      </div>
+      <button className="w-3/6 py-2 cursor-pointer hover:bg-gray-50 border-1 flex items-center justify-center gap-2 border-gray-300 rounded-4xl font-medium">
+        {" "}
+        <img src={Google} alt="" className="w-5 h-5" /> Google
+      </button>
+      <button className="w-3/6 py-2 cursor-pointer hover:bg-gray-50 border-1 flex items-center justify-center gap-2 border-gray-300 rounded-4xl font-medium">
+        {" "}
+        <img src={Github} alt="" className="w-5 h-5" /> Github
+      </button>
+      <p className="w-3/6 text-center text-gray-600 text-sm font-medium">
+        Don't have an account?{" "}
+        <span className="text-[#f25805] underline cursor-pointer">Sign up</span>
+      </p>
+    </form>
+  );
 }

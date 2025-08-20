@@ -65,7 +65,7 @@ export const Register = async (req: Request, res: Response) => {
         return res.status(201).json({
             message: "Verification link sent to your email",
             success: true,
-            user
+            id : user.id
         })
 
     } catch (error) {
@@ -138,7 +138,7 @@ export const Login = async (req: Request, res: Response) => {
         res.status(200).json({
             message: "User logged in successfully",
             success: true,
-            user
+            id: user.id
         })
 
     } catch (error) {
@@ -165,7 +165,7 @@ export const Logout = async( req: Request, res: Response) => {
 }
 
 export const VerifyEmail = async (req: Request, res: Response) => {
-    const { token } = req.query;
+    const { token } = req.params;
 
     try {
         if (!token || typeof token !== "string") {
@@ -206,3 +206,37 @@ export const VerifyEmail = async (req: Request, res: Response) => {
         })
     }
 }
+
+export const verificationStatus = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.query;
+        console.log(id);
+
+        if (!id || typeof id !== "string") {
+            return res.status(400).json({
+                message: "Invalid user id",
+                success: false
+            });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id }
+        });
+        console.log(user?.id);
+
+        if(!user){
+            return res.status(400).json({
+                message: "User not found",
+                success: false
+            })
+        };
+
+        return res.status(200).json({
+            IsVerified: user.IsVerified,
+            success: true
+        })
+    } catch (error) {
+        
+    }
+}
+

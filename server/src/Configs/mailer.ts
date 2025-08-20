@@ -17,11 +17,11 @@ export const sendEmail = async (to: string, link: string) => {
         html: `<p>Click <a href="${link}">here</a> to verify your email</p>`,
     }
 
-    transporter.sendMail(mailOptions, (error, info) => {
-        if(error){
-            console.log("error", error);
-        } else {
-            console.log("info", info);
-        }
-    })
+    // transporter.sendMail(mailOptions, (error, info) => {
+    //     if(error){
+    //         console.log("error", error);
+    //     } else {
+    //         console.log("info", info);
+    //     }
+    // })
 }
